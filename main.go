@@ -13,8 +13,10 @@ import (
 	"github.com/gosuri/uilive"
 )
 
-var s3Buckets []s3Bucket
-var wg sync.WaitGroup
+var (
+	s3Buckets []s3Bucket
+	wg        sync.WaitGroup
+)
 
 func init() {
 	s3Buckets = make([]s3Bucket, 0)
@@ -22,13 +24,14 @@ func init() {
 
 func main() {
 	profile := flag.String("profile", "default", "Profile from ~/.aws/config")
-	region := flag.String("region", "eu-west-1", "Region  (only to create session)")
+	region := flag.String("region", "us-east-1", "Region  (only to create session)")
+	output := flag.String("output", "txt", "output format: txt, csv")
 	flag.Parse()
 
 	// Create session (credentials from ~/.aws/config)
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState:       session.SharedConfigEnable,  //enable use of ~/.aws/config
-		AssumeRoleTokenProvider: stscreds.StdinTokenProvider, //ask for MFA if needed
+		SharedConfigState:       session.SharedConfigEnable,  // enable use of ~/.aws/config
+		AssumeRoleTokenProvider: stscreds.StdinTokenProvider, // ask for MFA if needed
 		Profile:                 string(*profile),
 		Config:                  aws.Config{Region: aws.String(*region)},
 	}))
@@ -59,7 +62,11 @@ func main() {
 
 	if len(s3Buckets) != 0 {
 		sort.Sort(bySize(s3Buckets))
-		PrintResult(&s3Buckets)
+		if *output == "csv" {
+			CsvResult(s3Buckets)
+			return
+		}
+		PrintResult(s3Buckets)
 	} else {
 		fmt.Println("No bucket found")
 	}

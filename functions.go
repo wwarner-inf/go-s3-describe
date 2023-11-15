@@ -89,7 +89,7 @@ func (s3Bucket *s3Bucket) checkRetention(sess *session.Session) {
 	s3Bucket.retention = "n/a"
 	if response != nil {
 		for _, rule := range response.Rules {
-			if rule != nil && rule.Status != nil && *rule.Status == "Enabled" {
+			if rule.Status != nil && *rule.Status == "Enabled" {
 				if rule.Expiration != nil && rule.Expiration.Days != nil {
 					s3Bucket.retention = fmt.Sprintf("%v", *rule.Expiration.Days)
 				}

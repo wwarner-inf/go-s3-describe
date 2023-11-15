@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
 	"os"
 	"strconv"
@@ -10,11 +11,38 @@ import (
 	"github.com/jedib0t/go-pretty/text"
 )
 
-func PrintResult(s3Buckets *[]s3Bucket) error {
+var headings = []string{"Bucket", "Region", "Public?", "Versioned?", "Retention", "Num Objs", "Standard", "StandardIA", "ReducedRedun", "Glacier"}
+
+func CsvResult(s3Buckets []s3Bucket) error {
+	writer := csv.NewWriter(os.Stdout)
+	writer.Write(headings)
+	for _, v := range s3Buckets {
+		err := writer.Write([]string{
+			v.name,
+			v.region,
+			strconv.FormatBool(v.isPublic),
+			v.isVersioned,
+			v.retention,
+			fmt.Sprintf("%v", v.numberOfObjects),
+			bytefmt.ByteSize(uint64(v.bucketSizeBytes["StandardStorage"])),
+			bytefmt.ByteSize(uint64(v.bucketSizeBytes["StandardIAStorage"])),
+			bytefmt.ByteSize(uint64(v.bucketSizeBytes["ReducedRedundancyStorage"])),
+			bytefmt.ByteSize(uint64(v.bucketSizeBytes["GlacierStorage"])),
+		})
+		if err != nil {
+			return err
+		}
+	}
+	writer.Flush()
+	return nil
+}
+
+func PrintResult(s3Buckets []s3Bucket) error {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
-	t.AppendHeader(table.Row{"Bucket", "Region", "IsPublic", "IsVersioned", "Retention", "NumberOfObjects", "Standard (BYTES)", "StandardIA (BYTES)", "ReducedRedundancy (BYTES)", "Glacier (BYTES)"})
-	for _, v := range *s3Buckets {
+	header := table.Row{headings}
+	t.AppendHeader(header)
+	for _, v := range s3Buckets {
 		// Convert BucketSize from float64 to a human readable format
 		t.AppendRow(table.Row{
 			v.name,
