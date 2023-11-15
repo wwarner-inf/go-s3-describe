@@ -13,18 +13,21 @@ import (
 func PrintResult(s3Buckets *[]s3Bucket) error {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
-	t.AppendHeader(table.Row{"Bucket", "Region", "IsPublic", "NumberOfObjects", "Standard (BYTES)", "StandardIA (BYTES)", "ReducedRedundancy (BYTES)", "Glacier (BYTES)"})
+	t.AppendHeader(table.Row{"Bucket", "Region", "IsPublic", "IsVersioned", "Retention", "NumberOfObjects", "Standard (BYTES)", "StandardIA (BYTES)", "ReducedRedundancy (BYTES)", "Glacier (BYTES)"})
 	for _, v := range *s3Buckets {
 		// Convert BucketSize from float64 to a human readable format
 		t.AppendRow(table.Row{
 			v.name,
 			v.region,
 			strconv.FormatBool(v.isPublic),
+			v.isVersioned,
+			v.retention,
 			fmt.Sprintf("%v", v.numberOfObjects),
 			bytefmt.ByteSize(uint64(v.bucketSizeBytes["StandardStorage"])),
 			bytefmt.ByteSize(uint64(v.bucketSizeBytes["StandardIAStorage"])),
 			bytefmt.ByteSize(uint64(v.bucketSizeBytes["ReducedRedundancyStorage"])),
-			bytefmt.ByteSize(uint64(v.bucketSizeBytes["GlacierStorage"]))})
+			bytefmt.ByteSize(uint64(v.bucketSizeBytes["GlacierStorage"])),
+		})
 	}
 	t.SetRowPainter(table.RowPainter(func(row table.Row) text.Colors {
 		if row[2] == "true" {

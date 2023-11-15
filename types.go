@@ -6,4 +6,6 @@ type s3Bucket struct {
 	bucketSizeBytes map[string]float64
 	numberOfObjects float64
 	isPublic        bool
+	isVersioned     string
+	retention       string
 }

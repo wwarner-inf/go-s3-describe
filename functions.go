@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -43,6 +44,8 @@ func getS3Buckets(sess *session.Session) {
 			}
 
 			s3Bucket.checkS3Policy(sess)
+			s3Bucket.checkBucketVersioning(sess)
+			s3Bucket.checkRetention(sess)
 			s3Bucket.checkACL(sess)
 
 			if s3Bucket.region == region {
@@ -63,6 +66,35 @@ func (s3Bucket *s3Bucket) checkS3Policy(sess *session.Session) {
 	response, _ := client.GetBucketPolicyStatus(input)
 	if response.PolicyStatus != nil {
 		s3Bucket.isPublic = *response.PolicyStatus.IsPublic
+	}
+}
+
+func (s3Bucket *s3Bucket) checkBucketVersioning(sess *session.Session) {
+	s3Bucket.isVersioned = "NotVersioned"
+	client := s3.New(sess)
+	input := &s3.GetBucketVersioningInput{Bucket: aws.String(s3Bucket.name)}
+	response, err := client.GetBucketVersioning(input)
+	if err != nil {
+		return
+	}
+	if response != nil && response.Status != nil {
+		s3Bucket.isVersioned = *response.Status
+	}
+}
+
+func (s3Bucket *s3Bucket) checkRetention(sess *session.Session) {
+	client := s3.New(sess)
+	input := &s3.GetBucketLifecycleConfigurationInput{Bucket: aws.String(s3Bucket.name)}
+	response, _ := client.GetBucketLifecycleConfiguration(input)
+	s3Bucket.retention = "n/a"
+	if response != nil {
+		for _, rule := range response.Rules {
+			if rule != nil && rule.Status != nil && *rule.Status == "Enabled" {
+				if rule.Expiration != nil && rule.Expiration.Days != nil {
+					s3Bucket.retention = fmt.Sprintf("%v", *rule.Expiration.Days)
+				}
+			}
+		}
 	}
 }
 
