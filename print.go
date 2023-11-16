@@ -11,11 +11,15 @@ import (
 	"github.com/jedib0t/go-pretty/text"
 )
 
-var headings = []string{"Bucket", "Region", "Public?", "Versioned?", "Retention", "Num Objs", "Standard", "StandardIA", "ReducedRedun", "Glacier"}
+var headings = table.Row{"Bucket", "Region", "Public?", "Versioned?", "Retention", "Num Objs", "Standard", "StandardIA", "ReducedRedun", "Glacier"}
 
 func CsvResult(s3Buckets []s3Bucket) error {
+	head := make([]string, len(headings))
+	for i := range headings {
+		head[i] = headings[i].(string)
+	}
 	writer := csv.NewWriter(os.Stdout)
-	writer.Write(headings)
+	writer.Write(head)
 	for _, v := range s3Buckets {
 		err := writer.Write([]string{
 			v.name,
@@ -40,8 +44,7 @@ func CsvResult(s3Buckets []s3Bucket) error {
 func PrintResult(s3Buckets []s3Bucket) error {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
-	header := table.Row{headings}
-	t.AppendHeader(header)
+	t.AppendHeader(headings)
 	for _, v := range s3Buckets {
 		// Convert BucketSize from float64 to a human readable format
 		t.AppendRow(table.Row{
